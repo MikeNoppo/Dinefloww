@@ -1,4 +1,4 @@
-import { Controller, Post, Body, UseGuards, Get, Param, Patch, Delete } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Get, Param, Patch, Delete, Req } from '@nestjs/common'; 
 import { AdminService } from './admin.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -8,6 +8,7 @@ import { Role } from '@prisma/client';
 import { CreateMenuItemDto } from './dto/create-menu-item.dto';
 import { UpdateMenuItemDto } from './dto/update-menu-item.dto';
 import { UpdateUserRoleDto } from './dto/update-user-role.dto';
+import { User as UserDecorator } from '../auth/decorators/user.decorator'; 
 
 @Controller('admin')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -42,8 +43,8 @@ export class AdminController {
 
   @Delete('user/:id')
   @Roles(Role.ADMIN)
-  removeUser(@Param('id') id: string) {
-    return this.adminService.removeUser(id);
+  removeUser(@Param('id') id: string, @UserDecorator('id') currentUserId: string) { // Use User decorator to get current user's ID
+    return this.adminService.removeUser(id, currentUserId); // Pass current user's ID
   }
 
   

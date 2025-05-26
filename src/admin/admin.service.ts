@@ -1,4 +1,4 @@
-import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
+import { Injectable, ConflictException, NotFoundException, ForbiddenException } from '@nestjs/common'; // Added ForbiddenException
 import { Role, User, status } from '@prisma/client'; // Changed Status to status
 import * as bcrypt from 'bcrypt';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -64,7 +64,10 @@ export class AdminService {
     }
   }
 
-  async removeUser(id: string): Promise<Omit<User, 'password'>> {
+  async removeUser(id: string, currentUserId: string): Promise<Omit<User, 'password'>> {
+    if (id === currentUserId) {
+      throw new ForbiddenException('Admins cannot delete their own account.');
+    }
     try {
       const deletedUser = await this.prisma.user.delete({
         where: { id },
