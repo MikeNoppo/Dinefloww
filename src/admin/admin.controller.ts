@@ -37,8 +37,8 @@ export class AdminController {
 
   @Patch('user/:id/role')
   @Roles(Role.ADMIN)
-  updateUserRole(@Param('id') id: string, @Body() updateUserRoleDto: UpdateUserRoleDto) {
-    return this.adminService.updateUserRole(id, updateUserRoleDto);
+  updateUserRole(@Param('id') id: string, @Body() updateUserRoleDto: UpdateUserRoleDto, @UserDecorator('id') currentUserId: string) {
+    return this.adminService.updateUserRole(id, updateUserRoleDto, currentUserId);
   }
 
   @Delete('user/:id')

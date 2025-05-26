@@ -48,7 +48,10 @@ export class AdminService {
     return result;
   }
 
-  async updateUserRole(id: string, updateUserRoleDto: UpdateUserRoleDto): Promise<Omit<User, 'password'>> {
+  async updateUserRole(id: string, updateUserRoleDto: UpdateUserRoleDto, currentUserId: string): Promise<Omit<User, 'password'>> {
+    if (id === currentUserId) {
+      throw new ForbiddenException('Admins cannot change their own role.');
+    }
     try {
       const updatedUser = await this.prisma.user.update({
         where: { id },
