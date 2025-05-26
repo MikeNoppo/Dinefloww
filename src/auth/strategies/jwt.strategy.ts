@@ -6,7 +6,7 @@ import { Logger } from '@nestjs/common';
 
 interface JwtPayload {
   sub: string; 
-  email: string; 
+  username: string; 
   role: PrismaRole;
 }  
 
@@ -24,7 +24,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: JwtPayload): Promise<Omit<User, 'password'>> {
-    if (!payload || !payload.sub || !payload.email) {
+    if (!payload || !payload.sub || !payload.username) {
       this.logger.warn('JWT validation failed: payload is invalid or missing required fields.');
       throw new UnauthorizedException('Invalid token: payload malformed.');
     }
@@ -35,7 +35,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
     if (!user) {
       this.logger.warn(
-        `JWT validation failed: User with email ${payload.email} (ID: ${payload.sub}) not found.`,
+        `JWT validation failed: User with username ${payload.username} (ID: ${payload.sub}) not found.`,
       );
       throw new UnauthorizedException('Invalid token or user not found.');
     }
