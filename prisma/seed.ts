@@ -7,7 +7,7 @@ async function main() {
   console.log(`Start seeding ...`);
 
   const saltRounds = 10; // Or your preferred salt rounds
-  const hashedPassword = await bcrypt.hash('adminpassword', saltRounds); // Replace 'adminpassword' with a secure password
+  const hashedPassword = await bcrypt.hash('admin', saltRounds); // Replace 'adminpassword' with a secure password
 
   const adminUser = await prisma.user.upsert({
     where: { username: 'admin' },

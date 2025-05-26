@@ -7,18 +7,48 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { Role } from '@prisma/client';
 import { CreateMenuItemDto } from './dto/create-menu-item.dto';
 import { UpdateMenuItemDto } from './dto/update-menu-item.dto';
+import { UpdateUserRoleDto } from './dto/update-user-role.dto';
 
 @Controller('admin')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class AdminController {
   constructor(private readonly adminService: AdminService) {}
 
-  @Post('user')
+
+  // USER MANAGEMENT
+  @Post('users')
   @Roles(Role.ADMIN)
   createUser(@Body() createUserDto: CreateUserDto) {
     return this.adminService.createUser(createUserDto);
   }
 
+  @Get('users')
+  @Roles(Role.ADMIN)
+  findAllUsers() {
+    return this.adminService.findAllUsers();
+  }
+
+  @Get('user/:id')
+  @Roles(Role.ADMIN)
+  findOneUser(@Param('id') id: string) {
+    return this.adminService.findOneUser(id);
+  }
+
+  @Patch('user/:id/role')
+  @Roles(Role.ADMIN)
+  updateUserRole(@Param('id') id: string, @Body() updateUserRoleDto: UpdateUserRoleDto) {
+    return this.adminService.updateUserRole(id, updateUserRoleDto);
+  }
+
+  @Delete('user/:id')
+  @Roles(Role.ADMIN)
+  removeUser(@Param('id') id: string) {
+    return this.adminService.removeUser(id);
+  }
+
+  
+  // ----------------------------------------------------------------------------------------------------------------
+  // MENU MANAGEMENT
   @Post('menu-item')
   @Roles(Role.ADMIN)
   createMenuItem(@Body() createMenuItemDto: CreateMenuItemDto) {

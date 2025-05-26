@@ -1,4 +1,5 @@
-import { IsString, IsNotEmpty, IsNumber, IsOptional, IsBoolean, Min } from 'class-validator';
+import { MenuStatus } from '@prisma/client';
+import { IsString, IsNotEmpty, IsNumber, IsOptional, IsEnum, Min } from 'class-validator';
 
 export class CreateMenuItemDto {
 
@@ -19,8 +20,10 @@ export class CreateMenuItemDto {
   @IsOptional()
   @IsString()
   description?: string;
+  
+  @IsEnum(MenuStatus)
+  @IsNotEmpty()
+  MenuStatus : MenuStatus;
 
-  @IsOptional()
-  @IsBoolean()
-  isAvailable?: boolean;
+
 }

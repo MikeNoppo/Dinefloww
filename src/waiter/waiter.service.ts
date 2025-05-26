@@ -2,7 +2,7 @@ import { Injectable, NotFoundException, BadRequestException, ForbiddenException 
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { ProcessPaymentDto } from './dto/process-payment.dto';
-import { Order, OrderStatus, Prisma, User } from '@prisma/client';
+import { Order, OrderStatus, Prisma, User, MenuStatus } from '@prisma/client'; 
 
 @Injectable()
 export class WaiterService {
@@ -30,7 +30,7 @@ export class WaiterService {
       if (!menuItem) {
         throw new NotFoundException(`MenuItem with ID "${itemDto.menuItemId}" not found.`);
       }
-      if (!menuItem.isAvailable) {
+      if (menuItem.status !== MenuStatus.AVAILABLE) { 
         throw new BadRequestException(`MenuItem "${menuItem.name}" is currently not available.`);
       }
       const itemPrice = menuItem.price.mul(itemDto.quantity);

@@ -11,6 +11,7 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 enum Role {
@@ -19,11 +20,23 @@ enum Role {
   WAITER // Responsible for serving customers and inputting orders: adding new orders per table, processing payments, printing receipts [cite: 28]
 }
 
+enum status {
+  ACTIVE
+  INACTIVE
+  BANNED 
+}
+
 enum OrderStatus {
   RECEIVED // Order has been received [cite: 23]
   IN_PROCESS // Order is being processed/cooked [cite: 23, 24, 30]
   READY // Order is ready to be served [cite: 23]
   DELIVERED // Order has been delivered/completed [cite: 22, 24]
+}
+
+enum MenuStatus {
+  AVAILABLE 
+  UNAVAILABLE 
+  DISCONTINUED 
 }
 
 enum PaymentOption {
@@ -40,6 +53,7 @@ model User {
   role      Role
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  status    status?
 
   // Relations
   orders    Order[] // A waiter can create multiple orders
@@ -51,7 +65,7 @@ model MenuItem {
   category    String // e.g., "makanan", "minuman", "dessert" [cite: 21]
   price       Decimal
   description String?
-  isAvailable Boolean   @default(true) // For easy management (e.g., out of stock)
+  status      MenuStatus
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 

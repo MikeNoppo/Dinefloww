@@ -1,14 +1,16 @@
 import { Injectable, UnauthorizedException, NotFoundException, InternalServerErrorException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { PrismaClient, User } from '@prisma/client';
+import { User, status } from '@prisma/client'; // Changed Status to status
 import * as bcrypt from 'bcrypt';
-import { LoginDto } from './dto/auth.dto'; // Import LoginDto
+import { LoginDto } from './dto/auth.dto';
+import { PrismaService } from '../prisma/prisma.service'; // Import PrismaService
 
 @Injectable()
 export class AuthService {
-  private prisma = new PrismaClient();
-
-  constructor(private readonly jwtService: JwtService) {}
+  constructor(
+    private readonly jwtService: JwtService,
+    private readonly prisma: PrismaService, // Inject PrismaService
+  ) {}
 
   async validateUser(username: string, passwordString: string): Promise<Omit<User, 'password'>> {
     const user = await this.prisma.user.findUnique({ where: { username } });
@@ -19,17 +21,16 @@ export class AuthService {
     if (!isPasswordValid) {
       throw new UnauthorizedException('Invalid password.');
     }
-    // Remove password before returning
     const { password, ...result } = user;
     return result;
   }
 
-  async login(loginDto: LoginDto) { 
+  async login(loginDto: LoginDto) {
     let userValidated: Omit<User, 'password'>;
     try {
       userValidated = await this.validateUser(loginDto.username, loginDto.password);
     } catch (error) {
-      if (error instanceof NotFoundException || 
+      if (error instanceof NotFoundException ||
           (error instanceof UnauthorizedException && error.message === 'Invalid password.')) {
         throw new UnauthorizedException('Invalid credentials. Please check your username and password.');
       }
@@ -37,7 +38,31 @@ export class AuthService {
       throw new InternalServerErrorException('An unexpected error occurred during login.');
     }
 
-    const payload = { sub: userValidated.id, username: userValidated.username, role: userValidated.role };
+    let updatedUserWithStatus: User;
+    try {
+      const userWithPassword = await this.prisma.user.update({
+        where: { id: userValidated.id },
+        data: { status: status.ACTIVE }, // Use status.ACTIVE
+      });
+      const { password, ...result } = userWithPassword;
+      updatedUserWithStatus = result as User;
+    } catch (error) {
+      console.error('Failed to update user status to ACTIVE:', error);
+      // If status update fails, proceed with the userValidated data which might have the old status
+      // and explicitly cast to User type, ensuring all expected fields are present or handled.
+      updatedUserWithStatus = userValidated as User;
+      // Ensure status field is at least null if not present, to match User type expectations.
+      if (updatedUserWithStatus.status === undefined) {
+        updatedUserWithStatus.status = null;
+      }
+    }
+
+    const payload = { 
+      sub: updatedUserWithStatus.id, 
+      username: updatedUserWithStatus.username, 
+      role: updatedUserWithStatus.role, 
+      status: updatedUserWithStatus.status
+    };
     let accessToken: string;
     try {
       accessToken = this.jwtService.sign(payload);
@@ -51,7 +76,7 @@ export class AuthService {
       message: 'Login successful',
       data: {
         access_token: accessToken,
-        user: userValidated,
+        user: updatedUserWithStatus,
       },
     };
   }
