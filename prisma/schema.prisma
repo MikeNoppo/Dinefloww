@@ -1,0 +1,113 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN // Responsible for system management: menu (CRUD), sales reports, user access (waiter, chef) [cite: 26, 27]
+  CHEF  // Responsible for processing food orders: viewing incoming orders and managing their status [cite: 29]
+  WAITER // Responsible for serving customers and inputting orders: adding new orders per table, processing payments, printing receipts [cite: 28]
+}
+
+enum OrderStatus {
+  RECEIVED // Order has been received [cite: 23]
+  IN_PROCESS // Order is being processed/cooked [cite: 23, 24, 30]
+  READY // Order is ready to be served [cite: 23]
+  DELIVERED // Order has been delivered/completed [cite: 22, 24]
+}
+
+enum PaymentOption {
+  CASH
+  CARD
+  QRIS // Simulated [cite: 25]
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  password  String
+  role      Role
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  orders    Order[] // A waiter can create multiple orders
+}
+
+model MenuItem {
+  id          String    @id @default(cuid())
+  name        String    @unique
+  category    String // e.g., "makanan", "minuman", "dessert" [cite: 21]
+  price       Decimal
+  description String?
+  isAvailable Boolean   @default(true) // For easy management (e.g., out of stock)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relations
+  orderItems OrderItem[]
+}
+
+model Table {
+  id        String   @id @default(cuid())
+  tableNumber Int      @unique
+  status    String   @default("Available") // e.g., "Available", "Occupied", "Needs Cleaning"
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  orders    Order[]
+}
+
+model Order {
+  id            String       @id @default(cuid())
+  tableId       String
+  table         Table        @relation(fields: [tableId], references: [id])
+  waiterId      String // The user (waiter) who took the order
+  waiter        User         @relation(fields: [waiterId], references: [id])
+  orderTime     DateTime     @default(now())
+  status        OrderStatus  @default(RECEIVED) // "diterima", "diproses", "siap", "diantar" [cite: 23]
+  totalAmount   Decimal      @default(0.00) // Calculated based on order items
+  isPaid        Boolean      @default(false)
+  paymentOption PaymentOption? // e.g., "Tunai", "Kartu", "QRIS" [cite: 25]
+  paymentTime   DateTime?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  // Relations
+  orderItems    OrderItem[]
+}
+
+model OrderItem {
+  id           String   @id @default(cuid())
+  orderId      String
+  order        Order    @relation(fields: [orderId], references: [id])
+  menuItemId   String
+  menuItem     MenuItem @relation(fields: [menuItemId], references: [id])
+  quantity     Int
+  priceAtOrder Decimal // Price of the item at the time of order
+  notes        String? // Specific notes for this item (e.g., "no onion")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model SalesReport {
+  id        String   @id @default(cuid())
+  reportDate DateTime @unique @default(now()) // Can be daily, weekly, monthly
+  totalSales Decimal
+  totalOrders Int
+  // Potentially more aggregate data like top-selling items, etc.
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
