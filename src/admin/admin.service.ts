@@ -7,10 +7,14 @@ import { MenuItem } from '@prisma/client';
 import { CreateMenuItemDto } from './dto/create-menu-item.dto';
 import { UpdateMenuItemDto } from './dto/update-menu-item.dto';
 import { UpdateUserRoleDto } from './dto/update-user-role.dto';
+import { SupabaseService } from '../supabase/supabase.service'; // Added SupabaseService
 
 @Injectable()
 export class AdminService {
-  constructor(private readonly prisma: PrismaService) {} // Inject PrismaService
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly supabaseService: SupabaseService, // Inject SupabaseService
+  ) {}
 
   async createUser(createUserDto: CreateUserDto) {
     const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
@@ -85,14 +89,23 @@ export class AdminService {
     }
   }
 
-  async createMenuItem(createMenuItemDto: CreateMenuItemDto): Promise<MenuItem> {
+  async createMenuItem(createMenuItemDto: CreateMenuItemDto, imageFile?: Express.Multer.File): Promise<MenuItem> {
+    let imageUrl: string | undefined = undefined;
+    if (imageFile) {
+      // Define a bucket name, e.g., 'menu-item-images'
+      // You might want to make this configurable
+      const bucket = 'menu-images'; 
+      imageUrl = await this.supabaseService.uploadFile(imageFile, bucket);
+    }
+
     return this.prisma.menuItem.create({
       data: {
         name: createMenuItemDto.name,
         category: createMenuItemDto.category,
         price: createMenuItemDto.price,
         description: createMenuItemDto.description,
-        status: createMenuItemDto.MenuStatus, 
+        status: createMenuItemDto.MenuStatus,
+        imageUrl: imageUrl, // Save the imageUrl
       },
     });
   }

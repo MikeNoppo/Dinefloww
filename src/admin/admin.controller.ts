@@ -1,4 +1,5 @@
-import { Controller, Post, Body, UseGuards, Get, Param, Patch, Delete, Req } from '@nestjs/common'; 
+import { Controller, Post, Body, UseGuards, Get, Param, Patch, Delete, Req, UploadedFile, UseInterceptors, ParseFilePipe, MaxFileSizeValidator, FileTypeValidator } from '@nestjs/common'; 
+import { FileInterceptor } from '@nestjs/platform-express'; // Added FileInterceptor
 import { AdminService } from './admin.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -52,8 +53,21 @@ export class AdminController {
   // MENU MANAGEMENT
   @Post('menu-item')
   @Roles(Role.ADMIN)
-  createMenuItem(@Body() createMenuItemDto: CreateMenuItemDto) {
-    return this.adminService.createMenuItem(createMenuItemDto);
+  @UseInterceptors(FileInterceptor('imageFile')) // Added FileInterceptor for image upload
+  async createMenuItem(
+    @Body() createMenuItemDto: CreateMenuItemDto,
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [
+          // new MaxFileSizeValidator({ maxSize: 1024 * 1024 * 5 }), // Example: 5MB limit
+          // new FileTypeValidator({ fileType: 'image/(jpeg|png|jpg)' }), // Example: only jpeg/png
+        ],
+        fileIsRequired: false, // Make file optional
+      }),
+    )
+    imageFile?: Express.Multer.File, // Make imageFile optional
+  ) {
+    return this.adminService.createMenuItem(createMenuItemDto, imageFile);
   }
 
   @Get('menu-items')
