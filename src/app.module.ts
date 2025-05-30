@@ -5,7 +5,6 @@ import { AdminModule } from './admin/admin.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { ChefModule } from './chef/chef.module';
 import { WaiterModule } from './waiter/waiter.module';
-import { SupabaseModule } from './supabase/supabase.module';
 
 @Module({
   imports: [
@@ -15,7 +14,6 @@ import { SupabaseModule } from './supabase/supabase.module';
     PrismaModule,
     ChefModule,
     WaiterModule,
-    SupabaseModule,
   ],
   controllers: [],
   providers: [],

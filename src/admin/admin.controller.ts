@@ -50,47 +50,61 @@ export class AdminController {
 
   
   // ----------------------------------------------------------------------------------------------------------------
-  // MENU MANAGEMENT
-  @Post('menu-item')
-  @Roles(Role.ADMIN)
-  @UseInterceptors(FileInterceptor('imageFile')) // Added FileInterceptor for image upload
-  async createMenuItem(
-    @Body() createMenuItemDto: CreateMenuItemDto,
-    @UploadedFile(
-      new ParseFilePipe({
-        validators: [
-          // new MaxFileSizeValidator({ maxSize: 1024 * 1024 * 5 }), // Example: 5MB limit
-          // new FileTypeValidator({ fileType: 'image/(jpeg|png|jpg)' }), // Example: only jpeg/png
-        ],
-        fileIsRequired: false, // Make file optional
-      }),
-    )
-    imageFile?: Express.Multer.File, // Make imageFile optional
-  ) {
-    return this.adminService.createMenuItem(createMenuItemDto, imageFile);
-  }
+    // MENU MANAGEMENT
+    @Post('menu-item')
+    @Roles(Role.ADMIN)
+    @UseInterceptors(FileInterceptor('imageFile')) // Added FileInterceptor for image upload
+    async createMenuItem(
+      @Body() createMenuItemDto: CreateMenuItemDto,
+      @UploadedFile(
+        new ParseFilePipe({
+          validators: [
+            // new MaxFileSizeValidator({ maxSize: 1024 * 1024 * 5 }), // Example: 5MB limit
+            // new FileTypeValidator({ fileType: 'image/(jpeg|png|jpg)' }), // Example: only jpeg/png
+          ],
+          fileIsRequired: false, // Make file optional
+        }),
+      )
+      imageFile?: Express.Multer.File, // Make imageFile optional
+    ) {
+      return this.adminService.createMenuItem(createMenuItemDto, imageFile);
+    }
 
-  @Get('menu-items')
-  @Roles(Role.ADMIN)
-  findAllMenuItems() {
-    return this.adminService.findAllMenuItems();
-  }
+    @Get('menu-items')
+    @Roles(Role.ADMIN)
+    findAllMenuItems() {
+      return this.adminService.findAllMenuItems();
+    }
 
-  @Get('menu-item/:id')
-  @Roles(Role.ADMIN)
-  findOneMenuItem(@Param('id') id: string) {
-    return this.adminService.findOneMenuItem(id);
-  }
+    @Get('menu-item/:id')
+    @Roles(Role.ADMIN)
+    findOneMenuItem(@Param('id') id: string) {
+      return this.adminService.findOneMenuItem(id);
+    }    
+    
+    @Patch('menu-item/:id')
+    @Roles(Role.ADMIN)
+    @UseInterceptors(FileInterceptor('imageFile'))
+    async updateMenuItem(
+      @Param('id') id: string,
+      @Body() updateMenuItemDto: UpdateMenuItemDto,
+      @UploadedFile(
+        new ParseFilePipe({
+          validators: [
+            // new MaxFileSizeValidator({ maxSize: 1024 * 1024 * 5 }),
+            // new FileTypeValidator({ fileType: 'image/(jpeg|png|jpg)' }),
+          ],
+          fileIsRequired: false,
+        }),
+      )
+      imageFile?: Express.Multer.File,
+    ) {
+      return this.adminService.updateMenuItem(id, updateMenuItemDto, imageFile);
+    }
 
-  @Patch('menu-item/:id')
-  @Roles(Role.ADMIN)
-  updateMenuItem(@Param('id') id: string, @Body() updateMenuItemDto: UpdateMenuItemDto) {
-    return this.adminService.updateMenuItem(id, updateMenuItemDto);
+    @Delete('menu-item/:id')
+    @Roles(Role.ADMIN)
+    removeMenuItem(@Param('id') id: string) {
+      return this.adminService.removeMenuItem(id);
+    }
   }
-
-  @Delete('menu-item/:id')
-  @Roles(Role.ADMIN)
-  removeMenuItem(@Param('id') id: string) {
-    return this.adminService.removeMenuItem(id);
-  }
-}

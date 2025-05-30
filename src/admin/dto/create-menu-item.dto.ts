@@ -1,5 +1,5 @@
-import { MenuStatus } from '@prisma/client';
-import { IsString, IsNotEmpty, IsNumber, IsOptional, IsEnum, Min, IsPositive } from 'class-validator';
+import { Transform } from 'class-transformer';
+import { IsString, IsNotEmpty, IsNumber, IsOptional, IsBoolean, IsPositive } from 'class-validator';
 
 export class CreateMenuItemDto {
 
@@ -12,10 +12,10 @@ export class CreateMenuItemDto {
   @IsNotEmpty()
   category: string;
 
-
-  @IsNumber()
-  @IsPositive()
-  price: number;
+  
+  @IsString()
+  @IsNotEmpty()
+  price: string;
 
   @IsOptional()
   @IsString()
@@ -25,9 +25,10 @@ export class CreateMenuItemDto {
   @IsString()
   imageUrl?: string; // Added imageUrl
 
-  @IsEnum(MenuStatus)
+  @IsBoolean()
+  @Transform(({ value }) => value === 'true' || value === true) // Transform string 'true' to boolean true
   @IsNotEmpty()
-  MenuStatus : MenuStatus;
+  availableForOrdering: boolean; 
 
 
 }
