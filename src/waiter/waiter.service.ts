@@ -222,4 +222,126 @@ export class WaiterService {
       activeOrder,
     };
   }
+
+  async getWaiterDashboardStats(waiter: User) {
+    // Total meja
+    const totalTables = await this.prisma.table.count();
+    // Meja occupied
+    const occupiedTables = await this.prisma.table.count({
+      where: { status: 'Occupied' },
+    });
+    // Pending orders (order waiter ini, status RECEIVED/IN_PROCESS/READY, belum paid)
+    const pendingOrders = await this.prisma.order.count({
+      where: {
+        waiterId: waiter.id,
+        status: { in: [OrderStatus.RECEIVED, OrderStatus.IN_PROCESS, OrderStatus.READY] },
+        isPaid: false,
+      },
+    });
+    // Total sales hari ini (order waiter ini, paid, paymentTime hari ini)
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(today.getDate() + 1);
+    const todaySales = await this.prisma.order.aggregate({
+      where: {
+        waiterId: waiter.id,
+        isPaid: true,
+        paymentTime: {
+          gte: today,
+          lt: tomorrow,
+        },
+      },
+      _sum: { totalAmount: true },
+    });
+    // Recent orders hari ini (order waiter ini, hari ini, urut terbaru)
+    const recentOrders = await this.prisma.order.findMany({
+      where: {
+        waiterId: waiter.id,
+        createdAt: {
+          gte: today,
+          lt: tomorrow,
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        table: { select: { tableNumber: true } },
+        orderItems: true,
+      },
+    });
+    return {
+      totalTables,
+      occupiedTables,
+      pendingOrders,
+      todaySales: todaySales._sum.totalAmount || 0,
+      recentOrders,
+    };
+  }
+  
+async findAllOrders(): Promise<Order[]> {
+  return this.prisma.order.findMany({
+    include: {
+      table: true,
+      orderItems: { include: { menuItem: { select: { name: true } } } },
+    },
+    orderBy: { orderTime: 'desc' },
+  });
+}
+
+async updateOrderStatusByWaiter(orderId: string, action: 'send_to_kitchen' | 'served' | 'proceed_payment', waiter: User): Promise<Order> {
+    const order = await this.prisma.order.findUnique({ where: { id: orderId } });
+    if (!order) throw new NotFoundException(`Order with ID "${orderId}" not found.`);
+    if (order.waiterId !== waiter.id) throw new ForbiddenException('You are not authorized to update this order.');
+
+    let newStatus;
+    if (action === 'send_to_kitchen') {
+      if (order.status !== OrderStatus.RECEIVED) throw new BadRequestException('Order must be in RECEIVED status to send to kitchen.');
+      newStatus = OrderStatus.IN_QUEUE;
+    } else if (action === 'served') {
+      if (order.status !== OrderStatus.READY) throw new BadRequestException('Order must be in READY status to be served.');
+      newStatus = OrderStatus.DELIVERED;
+    } else if (action === 'proceed_payment') {
+      if (order.status !== OrderStatus.DELIVERED) throw new BadRequestException('Order must be in DELIVERED status to proceed payment.');
+      newStatus = OrderStatus.PENDING_PAYMENT;
+    } else {
+      throw new BadRequestException('Invalid action.');
+    }
+
+    // Update status order
+    const updatedOrder = await this.prisma.order.update({
+      where: { id: orderId },
+      data: { status: newStatus },
+      include: {
+        table: true,
+        orderItems: { include: { menuItem: { select: { name: true } } } },
+      },
+    });
+    return updatedOrder;
+  }
+  
+  async completePayment(orderId: string, paymentOption: 'CASH' | 'CARD' | 'QRIS', waiter: User): Promise<Order> {
+    const order = await this.prisma.order.findUnique({ where: { id: orderId } });
+    if (!order) throw new NotFoundException(`Order with ID "${orderId}" not found.`);
+    if (order.waiterId !== waiter.id) throw new ForbiddenException('You are not authorized to update this order.');
+    if (order.status !== 'PENDING_PAYMENT') throw new BadRequestException('Order must be in PENDING_PAYMENT status to complete payment.');
+
+    const completedOrder = await this.prisma.order.update({
+      where: { id: orderId },
+      data: {
+        status: 'COMPLETED',
+        isPaid: true,
+        paymentOption,
+        paymentTime: new Date(),
+      },
+      include: {
+        table: true,
+        orderItems: { include: { menuItem: { select: { name: true } } } },
+      },
+    });
+    await this.prisma.table.update({
+      where: { id: completedOrder.tableId },
+      data: { status: 'Available' },
+    });
+    return completedOrder;
+  }
 }

@@ -1,12 +1,12 @@
-import { Controller, Post, Body, UseGuards, Param, Get, NotFoundException } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Param, Get, NotFoundException, Patch } from '@nestjs/common';
 import { WaiterService } from './waiter.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
-import { Role, User as PrismaUser } from '@prisma/client'; // Renamed User to PrismaUser to avoid conflict
+import { Role, User as PrismaUser } from '@prisma/client'; 
 import { CreateOrderDto } from './dto/create-order.dto';
 import { ProcessPaymentDto } from './dto/process-payment.dto';
-import { User } from '../auth/decorators/user.decorator'; // Corrected import to use User decorator
+import { User } from '../auth/decorators/user.decorator'; 
 
 @Controller('waiter')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -36,15 +36,13 @@ export class WaiterController {
     if (!receipt) {
       throw new NotFoundException(`Receipt for order ID "${orderId}" not found or not accessible.`);
     }
-    // In a real application, you might format this data or generate a PDF.
-    // For now, we return the order data suitable for a receipt.
     return receipt;
   }
 
   @Get('orders')
   @Roles(Role.WAITER)
-  async getMyOrders(@User() user: PrismaUser) { // Use PrismaUser type
-    return this.waiterService.findAllOrdersByWaiter(user);
+  async getAllOrders() {
+    return this.waiterService.findAllOrders();
   }
 
   @Get('order/:id')
@@ -55,6 +53,16 @@ export class WaiterController {
       throw new NotFoundException(`Order with ID "${orderId}" not found or not accessible.`);
     }
     return order;
+  }
+
+  @Patch('order/:id/status')
+  @Roles(Role.WAITER)
+  async updateOrderStatusByWaiter(
+    @Param('id') orderId: string,
+    @Body('action') action: 'send_to_kitchen' | 'served' | 'proceed_payment',
+    @User() user: PrismaUser,
+  ) {
+    return this.waiterService.updateOrderStatusByWaiter(orderId, action, user);
   }
 
   @Get('tables')
@@ -78,4 +86,21 @@ export class WaiterController {
     }
     return this.waiterService.getTableDetails(num);
   }
+
+  @Get('dashboard-stats')
+  @Roles(Role.WAITER)
+  async getDashboardStats(@User() user: PrismaUser) {
+  return this.waiterService.getWaiterDashboardStats(user);
+  }
+
+  @Patch('order/:id/complete-payment')
+  @Roles(Role.WAITER)
+  async completePayment(
+    @Param('id') orderId: string,
+    @Body('paymentOption') paymentOption: 'CASH' | 'CARD' | 'QRIS',
+    @User() user: PrismaUser,
+  ) {
+    return this.waiterService.completePayment(orderId, paymentOption, user);
+  }
+
 }

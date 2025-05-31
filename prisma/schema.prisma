@@ -27,9 +27,12 @@ enum status {
 
 enum OrderStatus {
   RECEIVED // Order has been received [cite: 23]
+  IN_QUEUE // Order is in the queue [cite: 23]
   IN_PROCESS // Order is being processed/cooked [cite: 23, 24, 30]
   READY // Order is ready to be served [cite: 23]
   DELIVERED // Order has been delivered/completed [cite: 22, 24]
+  COMPLETED
+  PENDING_PAYMENT 
 }
 
 enum MenuStatus {
