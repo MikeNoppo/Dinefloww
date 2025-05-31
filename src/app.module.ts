@@ -5,6 +5,7 @@ import { AdminModule } from './admin/admin.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { ChefModule } from './chef/chef.module';
 import { WaiterModule } from './waiter/waiter.module';
+import { MenuModule } from './menu/menu.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { WaiterModule } from './waiter/waiter.module';
     PrismaModule,
     ChefModule,
     WaiterModule,
+    MenuModule,
   ],
   controllers: [],
   providers: [],
