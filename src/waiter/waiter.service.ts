@@ -155,4 +155,48 @@ export class WaiterService {
     }
     return order;
   }
+
+  async createTable(tableNumber: number, status: string = 'Available') {
+    // Cek apakah tableNumber sudah ada
+    const existing = await this.prisma.table.findUnique({ where: { tableNumber } });
+    if (existing) {
+      throw new BadRequestException(`Table number ${tableNumber} already exists.`);
+    }
+    return this.prisma.table.create({
+      data: { tableNumber, status },
+    });
+  }
+
+  async getAllTables() {
+    return this.prisma.table.findMany({
+      orderBy: { tableNumber: 'asc' },
+    });
+  }
+
+
+  async getTableDetails(tableNumber: number) {
+    // Cari table berdasarkan nomor meja
+    const table = await this.prisma.table.findUnique({
+      where: { tableNumber },
+    });
+    if (!table) {
+      throw new NotFoundException(`Table number ${tableNumber} not found.`);
+    }
+    // Cari order aktif (status selain DELIVERED) untuk table ini
+    const activeOrder = await this.prisma.order.findFirst({
+      where: {
+        tableId: table.id,
+        status: { not: OrderStatus.DELIVERED },
+      },
+      orderBy: { orderTime: 'desc' },
+      include: {
+        orderItems: { include: { menuItem: { select: { name: true, price: true } } } },
+        waiter: { select: { id: true, name: true, username: true } },
+      },
+    });
+    return {
+      ...table,
+      activeOrder,
+    };
+  }
 }

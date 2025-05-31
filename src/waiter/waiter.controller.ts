@@ -56,4 +56,26 @@ export class WaiterController {
     }
     return order;
   }
+
+  @Get('tables')
+  @Roles(Role.WAITER)
+  async getAllTables() {
+    return this.waiterService.getAllTables();
+  }
+
+  @Post('table')
+  @Roles(Role.WAITER)
+  async createTable(@Body('tableNumber') tableNumber: number, @Body('status') status?: string) {
+    return this.waiterService.createTable(tableNumber, status);
+  }
+
+  @Get('table/:tableNumber')
+  @Roles(Role.WAITER)
+  async getTableDetails(@Param('tableNumber') tableNumber: string) {
+    const num = parseInt(tableNumber, 10);
+    if (isNaN(num)) {
+      throw new NotFoundException('Invalid table number');
+    }
+    return this.waiterService.getTableDetails(num);
+  }
 }

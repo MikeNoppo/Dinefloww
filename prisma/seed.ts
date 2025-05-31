@@ -21,6 +21,19 @@ async function main() {
   });
   console.log(`Created admin user: ${adminUser.username}`);
 
+  // Seed 10 tables
+  for (let i = 1; i <= 10; i++) {
+    await prisma.table.upsert({
+      where: { tableNumber: i },
+      update: {},
+      create: {
+        tableNumber: i,
+        status: 'Available',
+      },
+    });
+  }
+  console.log('Seeded 10 tables.');
+
   console.log(`Seeding finished.`);
 }
 
