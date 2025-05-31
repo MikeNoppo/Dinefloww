@@ -45,8 +45,31 @@ export class WaiterService {
       });
     }
 
+    // Update status table menjadi 'Occupied' jika masih Available
+    if (table.status !== 'Occupied') {
+      await this.prisma.table.update({
+        where: { id: tableId },
+        data: { status: 'Occupied' },
+      });
+    }
+
+    // Generate custom orderId (ORD-001, ORD-002, dst)
+    const lastOrder = await this.prisma.order.findFirst({
+      orderBy: { createdAt: 'desc' },
+      select: { id: true },
+      where: {
+        id: { startsWith: 'ORD-' }
+      }
+    });
+    let nextOrderNumber = 1;
+    if (lastOrder && /^ORD-(\d+)$/.test(lastOrder.id)) {
+      nextOrderNumber = parseInt(lastOrder.id.split('-')[1], 10) + 1;
+    }
+    const customOrderId = `ORD-${nextOrderNumber.toString().padStart(3, '0')}`;
+
     return this.prisma.order.create({
       data: {
+        id: customOrderId,
         tableId,
         waiterId,
         totalAmount,
