@@ -6,14 +6,14 @@ import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 @Injectable()
 export class ChefService {
   constructor(private readonly prisma: PrismaService) {}
-
   async findAllOrdersForChef(): Promise<Order[]> {
-    // Chefs might be interested in orders that are RECEIVED or IN_PROCESS
+    // Chef can see orders that are IN_QUEUE (pending), IN_PROCESS (cooking), or READY (completed)
     return this.prisma.order.findMany({
       where: {
         OR: [
-          { status: OrderStatus.RECEIVED },
-          { status: OrderStatus.IN_PROCESS },
+          { status: OrderStatus.IN_QUEUE }, // Orders sent to kitchen by waiter
+          { status: OrderStatus.IN_PROCESS }, // Orders currently being cooked
+          { status: OrderStatus.READY }, // Orders ready to be served
         ],
       },
       include: {
@@ -23,6 +23,13 @@ export class ChefService {
           },
         },
         table: true,
+        waiter: {
+          select: {
+            id: true,
+            name: true,
+            username: true,
+          },
+        },
       },
       orderBy: {
         orderTime: 'asc', // Show oldest orders first
@@ -70,6 +77,23 @@ export class ChefService {
       );
     }
 
+    // Additional validation for status transitions
+    if (
+      status === OrderStatus.IN_PROCESS &&
+      existingOrder.status !== OrderStatus.IN_QUEUE
+    ) {
+      throw new NotFoundException(
+        'Order must be IN_QUEUE to start cooking (IN_PROCESS).',
+      );
+    }
+
+    if (
+      status === OrderStatus.READY &&
+      existingOrder.status !== OrderStatus.IN_PROCESS
+    ) {
+      throw new NotFoundException('Order must be IN_PROCESS to mark as READY.');
+    }
+
     return this.prisma.order.update({
       where: { id },
       data: { status },
@@ -80,6 +104,13 @@ export class ChefService {
           },
         },
         table: true,
+        waiter: {
+          select: {
+            id: true,
+            name: true,
+            username: true,
+          },
+        },
       },
     });
   }
