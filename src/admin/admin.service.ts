@@ -4,11 +4,13 @@ import * as bcrypt from 'bcrypt';
 import { CreateUserDto } from './dto/create-user.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { UpdateUserRoleDto } from './dto/update-user-role.dto';
+import { WaiterService } from '../waiter/waiter.service';
 
 @Injectable()
 export class AdminService {
   constructor(
     private readonly prisma: PrismaService,
+    private readonly waiterService: WaiterService,
   ) {}
 
   async createUser(createUserDto: CreateUserDto) {
@@ -81,5 +83,42 @@ export class AdminService {
         throw new NotFoundException(`User with ID ${id} not found.`);
       }      throw error;
     }
+  }
+
+  async getDashboardStats() {
+    // Total Revenue
+    const totalRevenueResult = await this.prisma.order.aggregate({
+      _sum: { totalAmount: true },
+    });
+    const totalRevenue = totalRevenueResult._sum.totalAmount || 0;
+
+    // Total Orders
+    const totalOrders = await this.prisma.order.count();
+
+    // Active Tables (Occupied)
+    const activeTables = await this.prisma.table.count({ where: { status: 'Occupied' } });
+    const totalTables = await this.prisma.table.count();
+
+    // Staff Members
+    const staffRoles: Role[] = [Role.WAITER, Role.CHEF];
+    const staffMembers = await this.prisma.user.count({ where: { role: { in: staffRoles } } });
+
+    // Recent Orders (limit 4)
+    const allOrders = await this.waiterService.findAllOrders();
+    const recentOrders = allOrders.slice(0, 4).map(order => ({
+      ...order,
+      totalAmount: typeof order.totalAmount === 'object' && order.totalAmount !== null && typeof order.totalAmount.toNumber === 'function'
+        ? order.totalAmount.toNumber()
+        : order.totalAmount,
+    }));
+
+    return {
+      totalRevenue,
+      totalOrders,
+      activeTables,
+      totalTables,
+      staffMembers,
+      recentOrders,
+    };
   }
 }

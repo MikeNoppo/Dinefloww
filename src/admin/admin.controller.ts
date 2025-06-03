@@ -43,4 +43,10 @@ export class AdminController {
   removeUser(@Param('id') id: string, @UserDecorator('id') currentUserId: string) {
     return this.adminService.removeUser(id, currentUserId);
   }
+
+  @Get('dashboard')
+  @Roles(Role.ADMIN)
+  async getDashboard() {
+    return this.adminService.getDashboardStats();
+  }
 }
