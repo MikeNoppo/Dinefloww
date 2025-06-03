@@ -19,16 +19,6 @@ export class WaiterController {
     return this.waiterService.createOrder(createOrderDto, user);
   }
 
-  @Post('order/:id/pay')
-  @Roles(Role.WAITER)
-  async processPayment(
-    @Param('id') orderId: string,
-    @Body() processPaymentDto: ProcessPaymentDto,
-    @User() user: PrismaUser, // Use PrismaUser type
-  ) {
-    return this.waiterService.processPayment(orderId, processPaymentDto, user);
-  }
-
   @Get('order/:id/receipt')
   @Roles(Role.WAITER)
   async getReceipt(@Param('id') orderId: string, @User() user: PrismaUser) { // Use PrismaUser type
@@ -93,6 +83,18 @@ export class WaiterController {
   return this.waiterService.getWaiterDashboardStats(user);
   }
 
+  @Get('orders/pending-payments')
+  @Roles(Role.WAITER)
+  async getPendingPaymentOrders(@User() user: PrismaUser) {
+    return this.waiterService.findPendingPaymentOrders(user);
+  }
+
+  @Get('order/:id/pending-payment')
+  @Roles(Role.WAITER)
+  async getPendingPaymentOrderById(@Param('id') orderId: string, @User() user: PrismaUser) {
+    return this.waiterService.findPendingPaymentOrderById(orderId, user);
+  }
+
   @Patch('order/:id/complete-payment')
   @Roles(Role.WAITER)
   async completePayment(
@@ -101,6 +103,12 @@ export class WaiterController {
     @User() user: PrismaUser,
   ) {
     return this.waiterService.completePayment(orderId, paymentOption, user);
+  }
+
+  @Get('orders/recent') 
+  @Roles(Role.WAITER)
+  async getRecentTransactions(@User() user: PrismaUser) {
+    return this.waiterService.recentTransactions(user);
   }
 
 }
