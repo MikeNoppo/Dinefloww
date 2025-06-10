@@ -1,4 +1,4 @@
-import { Controller, Post, Body, UseGuards, Get, Param, Patch, Delete } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Get, Param, Patch, Delete, Query } from '@nestjs/common';
 import { AdminService } from './admin.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -49,4 +49,71 @@ export class AdminController {
   async getDashboard() {
     return this.adminService.getDashboardStats();
   }
+
+  // CHART ENDPOINTS
+  @Get('charts/sales')
+  @Roles(Role.ADMIN)
+  async getSalesChart(@Query('days') days?: string) {
+    const daysNumber = days ? parseInt(days) : 7;
+    return this.adminService.getSalesChartData(daysNumber);
+  }
+
+  @Get('charts/revenue-analytics')
+  @Roles(Role.ADMIN)
+  async getRevenueAnalytics() {
+    return this.adminService.getRevenueAnalytics();
+  }
+
+  @Get('charts/popular-menu')
+  @Roles(Role.ADMIN)
+  async getPopularMenuItems(@Query('limit') limit?: string) {
+    const limitNumber = limit ? parseInt(limit) : 10;
+    return this.adminService.getPopularMenuItems(limitNumber);
+  }
+
+  @Get('charts/order-status')
+  @Roles(Role.ADMIN)
+  async getOrderStatusDistribution() {
+    return this.adminService.getOrderStatusDistribution();
+  }
+
+  @Get('charts/hourly-orders')
+  @Roles(Role.ADMIN)
+  async getHourlyOrderAnalytics() {
+    return this.adminService.getHourlyOrderAnalytics();
+  }
+
+  @Get('charts/payment-methods')
+  @Roles(Role.ADMIN)
+  async getPaymentMethodAnalytics() {
+    return this.adminService.getPaymentMethodAnalytics();
+  }
+
+  // DASHBOARD WIDGETS
+  @Get('popular-menu-items')
+  @Roles(Role.ADMIN)
+  async getPopularMenuItemsWidget(@Query('limit') limit?: string) {
+    const limitNumber = limit ? parseInt(limit) : 5;
+    return this.adminService.getPopularMenuItemsForDashboard(limitNumber);
+  }
+
+  @Get('menu-analytics')
+  @Roles(Role.ADMIN)
+  async getMenuAnalytics() {
+    return this.adminService.getMenuAnalytics();
+  }
+
+  // REPORTS & ANALYTICS ENDPOINTS
+  @Get('reports/summary')
+  @Roles(Role.ADMIN)
+  async getReportsSummary(@Query('timeRange') timeRange?: 'day' | 'week' | 'month' | 'year') {
+    return this.adminService.getReportsData(timeRange || 'day');
+  }
+
+  @Get('reports/chart-data')
+  @Roles(Role.ADMIN)
+  async getReportsChartData(@Query('timeRange') timeRange?: 'day' | 'week' | 'month' | 'year') {
+    return this.adminService.getReportsChartData(timeRange || 'day');
+  }
+
 }
